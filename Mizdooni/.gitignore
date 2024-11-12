@@ -11,10 +11,14 @@ buildNumber.properties
 .mvn/wrapper/maven-wrapper.jar
 elastic-apm-agent-*.jar
 
-# lsp
+### Eclipse ###
+.apt_generated
 .classpath
+.factorypath
 .project
-.settings/
+.settings
+.springBeans
+.sts4-cache
 
 # IntelliJ IDEA
 .idea/
