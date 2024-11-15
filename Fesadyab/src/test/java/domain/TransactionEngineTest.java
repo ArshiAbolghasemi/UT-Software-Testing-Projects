@@ -42,10 +42,10 @@ public class TransactionEngineTest {
 
     static Object[][] transactionPatternAboveThresholdProvider() {
         ArrayList<Transaction> transactionHistory = new ArrayList<>(List.of(
-            TransactionFaker.createTransaction(1, 10_000),
-            TransactionFaker.createTransaction(2, 12_500),
-            TransactionFaker.createTransaction(3, 25_000),
-            TransactionFaker.createTransaction(4, 40_000)
+            TransactionFaker.createTransaction(10_000),
+            TransactionFaker.createTransaction(12_500),
+            TransactionFaker.createTransaction(25_000),
+            TransactionFaker.createTransaction(40_000)
         ));
 
         return new Object[][] {
@@ -63,6 +63,27 @@ public class TransactionEngineTest {
         TransactionEngine transactionEngine = createTransactionEngine(transactionHistory);
         assertEquals(expectedTransactionPatternAboveThreshold,
             transactionEngine.getTransactionPatternAboveThreshold(threshold));
+    }
+
+    static Object[][] transactionFraudScoreProvider() {
+        Transaction transaction1 = TransactionFaker.createTransaction(1, 10_000, false);
+        Transaction transaction2 = TransactionFaker.createTransaction(1, 5_000, true);
+        Transaction transaction3 = TransactionFaker.createTransaction(1, 60_000, true);
+        ArrayList<Transaction> transactionHistory = new ArrayList<>(List.of(transaction1, transaction2, transaction3));
+
+        return new Object[][] {
+            { transactionHistory, transaction1, 0 },
+            { transactionHistory, transaction2, 0 },
+            { transactionHistory, transaction3, 10_000 },
+        };
+    }
+    @ParameterizedTest
+    @MethodSource("transactionFraudScoreProvider")
+    @DisplayName("should return correct fraud score for transaction")
+    void shouldReturnCorrectFraudScoreForTransaction(ArrayList<Transaction> transactionHistory, Transaction transaction,
+        int expectedFraudScore) {
+        TransactionEngine transactionEngine = createTransactionEngine(transactionHistory);
+        assertEquals(expectedFraudScore, transactionEngine.detectFraudulentTransaction(transaction));
     }
 
 }
