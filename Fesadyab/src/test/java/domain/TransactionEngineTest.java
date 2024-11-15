@@ -13,6 +13,12 @@ import util.TransactionFaker;
 
 public class TransactionEngineTest {
 
+    private TransactionEngine createTransactionEngine(ArrayList<Transaction> transactionHistory) {
+        TransactionEngine transactionEngine = new TransactionEngine();
+        transactionEngine.transactionHistory = transactionHistory;
+        return transactionEngine;
+    }
+
     static Object[][] transactionAverageAmountProvider() {
         ArrayList<Transaction> transactionHistory = new ArrayList<>(List.of(
             TransactionFaker.createTransaction(1, 10_000),
@@ -29,10 +35,34 @@ public class TransactionEngineTest {
     @MethodSource("transactionAverageAmountProvider")
     @DisplayName("should return correct average transaction amount for account")
     void shouldReturnCorrectAverageTransactionAmmountForAccount(ArrayList<Transaction> transactionHistory,
-        int accountId, int averageTransactionAmmount) {
-        TransactionEngine transactionEngine = (new TransactionEngine());
-        transactionEngine.transactionHistory = transactionHistory;
-        assertEquals(transactionEngine.getAverageTransactionAmountByAccount(accountId), averageTransactionAmmount);
+        int accountId, int expectedAverageTransactionAmmount) {
+        TransactionEngine transactionEngine = createTransactionEngine(transactionHistory);
+        assertEquals(expectedAverageTransactionAmmount, transactionEngine.getAverageTransactionAmountByAccount(accountId));
+    }
+
+    static Object[][] transactionPatternAboveThresholdProvider() {
+        ArrayList<Transaction> transactionHistory = new ArrayList<>(List.of(
+            TransactionFaker.createTransaction(1, 10_000),
+            TransactionFaker.createTransaction(2, 12_500),
+            TransactionFaker.createTransaction(3, 25_000),
+            TransactionFaker.createTransaction(4, 40_000)
+        ));
+
+        return new Object[][] {
+            { new ArrayList<>(), 4_000, 0 },
+            { transactionHistory, 50_000, 0 },
+            { transactionHistory, 15_000, 15_000 },
+            { transactionHistory, 10_000, 0 },
+        };
+    }
+    @ParameterizedTest
+    @MethodSource("transactionPatternAboveThresholdProvider")
+    @DisplayName("should return correct transaction pattern above threshold that is given")
+    void shouldReturnCorrectTransactionPatternAboveThreshold_whenThresholdIsGiven(
+        ArrayList<Transaction> transactionHistory, int threshold, int expectedTransactionPatternAboveThreshold) {
+        TransactionEngine transactionEngine = createTransactionEngine(transactionHistory);
+        assertEquals(expectedTransactionPatternAboveThreshold,
+            transactionEngine.getTransactionPatternAboveThreshold(threshold));
     }
 
 }
