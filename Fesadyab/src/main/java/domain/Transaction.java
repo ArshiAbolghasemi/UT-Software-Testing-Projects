@@ -8,7 +8,7 @@ import lombok.Setter;
 @Setter
 @Builder
 public class Transaction {
-    int transactionId;
+    long transactionId;
     int accountId;
     int amount;
     boolean isDebit;
