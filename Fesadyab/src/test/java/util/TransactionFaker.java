@@ -24,5 +24,14 @@ public class TransactionFaker {
             .build();
     }
 
+    public static Transaction createTransaction(int accountId, int amount, boolean isDebit) {
+        return Transaction.builder()
+            .transactionId(Faker.instance().number().numberBetween(1, 100))
+            .accountId(accountId)
+            .amount(amount)
+            .isDebit(isDebit)
+            .build();
+    }
+
 }
 
