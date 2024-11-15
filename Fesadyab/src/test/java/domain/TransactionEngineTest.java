@@ -28,10 +28,11 @@ public class TransactionEngineTest {
     @ParameterizedTest
     @MethodSource("transactionAverageAmountProvider")
     @DisplayName("should return correct average transaction amount for account")
-    void shouldReturnCorrectAverageTransactionAmmountForAccount(ArrayList<Transaction> transactionHistory, 
+    void shouldReturnCorrectAverageTransactionAmmountForAccount(ArrayList<Transaction> transactionHistory,
         int accountId, int averageTransactionAmmount) {
         TransactionEngine transactionEngine = (new TransactionEngine());
         transactionEngine.transactionHistory = transactionHistory;
         assertEquals(transactionEngine.getAverageTransactionAmountByAccount(accountId), averageTransactionAmmount);
     }
+
 }
