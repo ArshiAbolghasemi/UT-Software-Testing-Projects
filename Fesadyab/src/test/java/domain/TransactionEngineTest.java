@@ -66,15 +66,16 @@ public class TransactionEngineTest {
     }
 
     static Object[][] transactionFraudScoreProvider() {
-        Transaction transaction1 = TransactionFaker.createTransaction(1, 10_000, false);
-        Transaction transaction2 = TransactionFaker.createTransaction(1, 5_000, true);
-        Transaction transaction3 = TransactionFaker.createTransaction(1, 60_000, true);
-        ArrayList<Transaction> transactionHistory = new ArrayList<>(List.of(transaction1, transaction2, transaction3));
+        ArrayList<Transaction> transactionHistory = new ArrayList<>(List.of(
+            TransactionFaker.createTransaction(1, 10_000),
+            TransactionFaker.createTransaction(1, 5_000),
+            TransactionFaker.createTransaction(1, 15_000)
+        ));
 
         return new Object[][] {
-            { transactionHistory, transaction1, 0 },
-            { transactionHistory, transaction2, 0 },
-            { transactionHistory, transaction3, 10_000 },
+            { transactionHistory, TransactionFaker.createTransaction(1, 12_000, false), 0 },
+            { transactionHistory, TransactionFaker.createTransaction(1, 7_500, true), 0 },
+            { transactionHistory, TransactionFaker.createTransaction(1, 35_000, true), 15_000 },
         };
     }
     @ParameterizedTest
