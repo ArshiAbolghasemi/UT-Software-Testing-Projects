@@ -87,4 +87,27 @@ public class TransactionEngineTest {
         assertEquals(expectedFraudScore, transactionEngine.detectFraudulentTransaction(transaction));
     }
 
+    static Object[][] addTransactionProvider() {
+        Transaction existedTransaction = TransactionFaker.createTransaction(1, 10_000);
+        ArrayList<Transaction> transactionHistory = new ArrayList<>(List.of(
+            existedTransaction,
+            TransactionFaker.createTransaction(1, 5_000),
+            TransactionFaker.createTransaction(1, 9_000)
+        ));
+
+        return new Object[][] {
+            { transactionHistory, existedTransaction, 0 },
+            { transactionHistory, TransactionFaker.createTransaction(1, 20_000, true), 4_000 },
+            { transactionHistory, TransactionFaker.createTransaction(1, 7_000, true), 0 }
+        };
+    }
+    @ParameterizedTest
+    @MethodSource("addTransactionProvider")
+    @DisplayName("should add transaction correctly and detect fraud if is existed")
+    void shouldAddTransactionCorrectlyAndDetectFraudIfExisted(ArrayList<Transaction> transactionHistory,
+        Transaction transaction, int expectedFraudScore) {
+        TransactionEngine transactionEngine = createTransactionEngine(transactionHistory);
+        assertEquals(expectedFraudScore, transactionEngine.addTransactionAndDetectFraud(transaction));
+    }
+
 }
