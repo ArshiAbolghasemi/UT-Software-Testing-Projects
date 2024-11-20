@@ -15,6 +15,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -56,7 +58,7 @@ public class RestaurantControllerAPITest {
             int restaurantId = restaurant.getId();
             when(restaurantService.getRestaurant(restaurantId)).thenReturn(restaurant);
 
-            mockMvc.perform(get("/restaurants/" + restaurantId)
+            mockMvc.perform(get("/restaurants/{restaurantId}", Integer.toString(restaurantId))
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success", CoreMatchers.is(true)))
@@ -78,6 +80,30 @@ public class RestaurantControllerAPITest {
                 .andExpect(jsonPath("$.data.managerUsername", CoreMatchers.is(restaurant.getManager().getUsername())))
                 .andExpect(jsonPath("$.data.image", CoreMatchers.is(restaurant.getImageLink())))
                 .andExpect(jsonPath("$.data.totalReviews", CoreMatchers.is(restaurant.getReviews().size())))
+                .andDo(print());
+        }
+
+        @Test
+        @DisplayName("should return not found response when restaurant is not existed")
+        void shouldReturnNotFoundResponse_whenRestaurantIsNotExisted() throws Exception {
+            int restaurantId = 111111;
+            when(restaurantService.getRestaurant(restaurantId)).thenReturn(null);
+
+            mockMvc.perform(get("/restaurants/{restaurantId}", Integer.toString(restaurantId))
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success", CoreMatchers.is(false)))
+                .andExpect(jsonPath("$.message", CoreMatchers.is("restaurant not found")))
+                .andDo(print());
+        }
+
+        @ParameterizedTest
+        @DisplayName("should return not found response when restaurant is not existed")
+        @ValueSource(strings = {"invalid"})
+        void shouldReturnBadRequest_whenRestaurantIdIsInvalid(String restaurantId) throws Exception {
+            mockMvc.perform(get("/restaurants/{restaurantId}", restaurantId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
                 .andDo(print());
         }
     }
