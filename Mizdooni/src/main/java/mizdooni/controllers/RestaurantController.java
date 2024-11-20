@@ -32,6 +32,7 @@ class RestaurantController {
     @GetMapping("/restaurants")
     public Response getRestaurants(@RequestParam int page, RestaurantSearchFilter filter) {
         try {
+            filter.validate();
             PagedList<Restaurant> restaurants = restaurantService.getRestaurants(page, filter);
             return Response.ok("restaurants listed", restaurants);
         } catch (Exception ex) {
