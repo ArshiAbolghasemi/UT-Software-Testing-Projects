@@ -6,6 +6,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.List;
+import java.util.Map;
+
 import org.hamcrest.CoreMatchers;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -16,6 +19,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -23,8 +27,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.util.LinkedMultiValueMap;
 
 import mizdooni.model.Restaurant;
+import mizdooni.model.RestaurantSearchFilter;
+import mizdooni.response.PagedList;
 import mizdooni.service.RestaurantService;
 import mizdooni.utils.RestaurantFaker;
 
@@ -102,6 +109,109 @@ public class RestaurantControllerAPITest {
         @ValueSource(strings = {"invalid"})
         void shouldReturnBadRequest_whenRestaurantIdIsInvalid(String restaurantId) throws Exception {
             mockMvc.perform(get("/restaurants/{restaurantId}", restaurantId)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andDo(print());
+        }
+    }
+
+    @Nested
+    class GetRestaurants {
+
+        static Object[][] getRestauarantsProvider() {
+            List<Restaurant> restaurants = List.of(RestaurantFaker.createRestaurant(),
+                RestaurantFaker.createRestaurant());
+            return new Object[][] {
+                {
+                    1,
+                    Map.of(
+                        "name",  "The Krusty Krab",
+                        "sort", "rating",
+                        "order", "asc"
+                    ),
+                    restaurants,
+                },
+                {
+                    5,
+                    Map.of(
+                        "type", "italian",
+                        "sort", "reviews"
+                    ),
+                    restaurants
+                },
+                {
+                    3,
+                    Map.of(
+                        "location", "bikini bottom"
+                    ),
+                    restaurants
+                }
+            };
+        }
+        @ParameterizedTest
+        @MethodSource("getRestauarantsProvider")
+        void shouldReturnCorrectListOfRestaurants(int page, Map<String, String> params,
+            List<Restaurant> restaurants) throws Exception {
+            RestaurantSearchFilter filters = new RestaurantSearchFilter();
+            if (params.containsKey("name")) {
+                filters.setName(params.get("name"));
+            }
+            if (params.containsKey("type")) {
+                filters.setType(params.get("type"));
+            }
+            if (params.containsKey("location")) {
+                filters.setLocation(params.get("location"));
+            }
+            if (params.containsKey("sort")) {
+                filters.setSort(params.get("sort"));
+            }
+            if (params.containsKey("order")) {
+                filters.setOrder(params.get("order"));
+            }
+            when(restaurantService.getRestaurants(page, filters))
+                .thenReturn(new PagedList<>(restaurants, page, 10));
+
+            mockMvc.perform(get("/restaurants")
+                .param("page", Integer.toString(page))
+                .params(new LinkedMultiValueMap<>() {{ params.forEach((key, value) -> add(key, value)); }})
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andDo(print());
+        }
+
+        static Object[][] getRestaurantsInvalidProvider() {
+            return new Object[][] {
+                {
+                    Map.of(
+                        "name", "feri kassif",
+                        "location", "tehroon"
+                    )
+                },
+                {
+                    Map.of(
+                        "page", "1",
+                        "sort", "reviews",
+                        "order", "invalid order"
+                    )
+                },
+                {
+                    Map.of(
+                        "page", "5",
+                        "sort", "invalid sort"
+                    )
+                },
+                {
+                    Map.of(
+                        "page", "invalid page"
+                    )
+                }
+            };
+        }
+        @ParameterizedTest
+        @MethodSource("getRestaurantsInvalidProvider")
+        void shouldReturnBadRequest_whenParametersIsMissedOrInvalid(Map<String, String> params) throws Exception {
+            mockMvc.perform(get("/restaurants")
+                .params(new LinkedMultiValueMap<>() {{ params.forEach((key, value) -> add(key, value)); }})
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andDo(print());
