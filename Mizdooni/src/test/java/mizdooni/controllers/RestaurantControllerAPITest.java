@@ -1,7 +1,6 @@
 package mizdooni.controllers;
 
 import static mizdooni.controllers.ControllerUtils.TIME_FORMATTER;
-import static mizdooni.controllers.ControllerUtils.checkRestaurant;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
