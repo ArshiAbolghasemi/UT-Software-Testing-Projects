@@ -1,10 +1,13 @@
 package mizdooni.controllers;
 
 import static mizdooni.controllers.ControllerUtils.TIME_FORMATTER;
+import static mizdooni.controllers.ControllerUtils.checkRestaurant;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.any;
 
 import java.util.List;
 import java.util.Map;
@@ -27,6 +30,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.util.LinkedMultiValueMap;
 
 import mizdooni.model.Restaurant;
@@ -43,6 +47,28 @@ public class RestaurantControllerAPITest {
     private MockMvc mockMvc;
     @MockBean
     private RestaurantService restaurantService;
+
+    private void checkRestaurantResponse(ResultActions response, String jsonBasePath, Restaurant restaurant) 
+        throws Exception {
+        response
+            .andExpect(jsonPath(jsonBasePath + ".id", CoreMatchers.is(restaurant.getId())))
+            .andExpect(jsonPath(jsonBasePath + ".name", CoreMatchers.is(restaurant.getName())))
+            .andExpect(jsonPath(jsonBasePath + ".description", CoreMatchers.is(restaurant.getDescription())))
+            .andExpect(jsonPath(jsonBasePath + ".startTime", CoreMatchers.is(restaurant.getStartTime().format(TIME_FORMATTER))))
+            .andExpect(jsonPath(jsonBasePath + ".endTime", CoreMatchers.is(restaurant.getEndTime().format(TIME_FORMATTER))))
+            .andExpect(jsonPath(jsonBasePath + ".address.country", CoreMatchers.is(restaurant.getAddress().getCountry())))
+            .andExpect(jsonPath(jsonBasePath + ".address.city", CoreMatchers.is(restaurant.getAddress().getCity())))
+            .andExpect(jsonPath(jsonBasePath + ".address.street", CoreMatchers.is(restaurant.getAddress().getStreet())))
+            .andExpect(jsonPath(jsonBasePath + ".starCount", CoreMatchers.is(restaurant.getStarCount())))
+            .andExpect(jsonPath(jsonBasePath + ".averageRating.food", CoreMatchers.is(restaurant.getAverageRating().food)))
+            .andExpect(jsonPath(jsonBasePath + ".averageRating.service", CoreMatchers.is(restaurant.getAverageRating().service)))
+            .andExpect(jsonPath(jsonBasePath + ".averageRating.ambiance", CoreMatchers.is(restaurant.getAverageRating().ambiance)))
+            .andExpect(jsonPath(jsonBasePath + ".averageRating.overall", CoreMatchers.is(restaurant.getAverageRating().overall)))
+            .andExpect(jsonPath(jsonBasePath + ".maxSeatsNumber", CoreMatchers.is(restaurant.getMaxSeatsNumber())))
+            .andExpect(jsonPath(jsonBasePath + ".managerUsername", CoreMatchers.is(restaurant.getManager().getUsername())))
+            .andExpect(jsonPath(jsonBasePath + ".image", CoreMatchers.is(restaurant.getImageLink())))
+            .andExpect(jsonPath(jsonBasePath + ".totalReviews", CoreMatchers.is(restaurant.getReviews().size())));
+    }
 
     @Nested
     class GetRestaurant {
@@ -65,29 +91,15 @@ public class RestaurantControllerAPITest {
             int restaurantId = restaurant.getId();
             when(restaurantService.getRestaurant(restaurantId)).thenReturn(restaurant);
 
-            mockMvc.perform(get("/restaurants/{restaurantId}", Integer.toString(restaurantId))
+            ResultActions response = mockMvc.perform(get("/restaurants/{restaurantId}", Integer.toString(restaurantId))
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success", CoreMatchers.is(true)))
                 .andExpect(jsonPath("$.message", CoreMatchers.is("restaurant found")))
-                .andExpect(jsonPath("$.data.id", CoreMatchers.is(restaurantId)))
-                .andExpect(jsonPath("$.data.name", CoreMatchers.is(restaurant.getName())))
-                .andExpect(jsonPath("$.data.description", CoreMatchers.is(restaurant.getDescription())))
-                .andExpect(jsonPath("$.data.startTime", CoreMatchers.is(restaurant.getStartTime().format(TIME_FORMATTER))))
-                .andExpect(jsonPath("$.data.endTime", CoreMatchers.is(restaurant.getEndTime().format(TIME_FORMATTER))))
-                .andExpect(jsonPath("$.data.address.country", CoreMatchers.is(restaurant.getAddress().getCountry())))
-                .andExpect(jsonPath("$.data.address.city", CoreMatchers.is(restaurant.getAddress().getCity())))
-                .andExpect(jsonPath("$.data.address.street", CoreMatchers.is(restaurant.getAddress().getStreet())))
-                .andExpect(jsonPath("$.data.starCount", CoreMatchers.is(restaurant.getStarCount())))
-                .andExpect(jsonPath("$.data.averageRating.food", CoreMatchers.is(restaurant.getAverageRating().food)))
-                .andExpect(jsonPath("$.data.averageRating.service", CoreMatchers.is(restaurant.getAverageRating().service)))
-                .andExpect(jsonPath("$.data.averageRating.ambiance", CoreMatchers.is(restaurant.getAverageRating().ambiance)))
-                .andExpect(jsonPath("$.data.averageRating.overall", CoreMatchers.is(restaurant.getAverageRating().overall)))
-                .andExpect(jsonPath("$.data.maxSeatsNumber", CoreMatchers.is(restaurant.getMaxSeatsNumber())))
-                .andExpect(jsonPath("$.data.managerUsername", CoreMatchers.is(restaurant.getManager().getUsername())))
-                .andExpect(jsonPath("$.data.image", CoreMatchers.is(restaurant.getImageLink())))
-                .andExpect(jsonPath("$.data.totalReviews", CoreMatchers.is(restaurant.getReviews().size())))
+                .andExpect(jsonPath("$.data").isMap())
                 .andDo(print());
+
+            checkRestaurantResponse(response, "$.data", restaurant);
         }
 
         @Test
@@ -132,7 +144,7 @@ public class RestaurantControllerAPITest {
                     restaurants,
                 },
                 {
-                    5,
+                    1,
                     Map.of(
                         "type", "italian",
                         "sort", "reviews"
@@ -168,15 +180,27 @@ public class RestaurantControllerAPITest {
             if (params.containsKey("order")) {
                 filters.setOrder(params.get("order"));
             }
-            when(restaurantService.getRestaurants(page, filters))
-                .thenReturn(new PagedList<>(restaurants, page, 10));
+            PagedList<Restaurant> listRestaurants = new PagedList<>(restaurants, page, 10);
+            when(restaurantService.getRestaurants(eq(page), any(RestaurantSearchFilter.class)))
+                .thenReturn(listRestaurants);
 
-            mockMvc.perform(get("/restaurants")
+            ResultActions response = mockMvc.perform(get("/restaurants")
                 .param("page", Integer.toString(page))
                 .params(new LinkedMultiValueMap<>() {{ params.forEach((key, value) -> add(key, value)); }})
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success", CoreMatchers.is(true)))
+                .andExpect(jsonPath("$.message", CoreMatchers.is("restaurants listed")))
+                .andExpect(jsonPath("$.data").isMap())
+                .andExpect(jsonPath("$.data.page", CoreMatchers.is(page)))
+                .andExpect(jsonPath("$.data.hasNext", CoreMatchers.is(listRestaurants.hasNext())))
+                .andExpect(jsonPath("$.data.totalPages", CoreMatchers.is(listRestaurants.totalPages())))
+                .andExpect(jsonPath("$.data.pageList").isArray())
                 .andDo(print());
+            for (int i = 0; i < listRestaurants.getPageList().size(); i++) {
+                Restaurant restaurant = listRestaurants.getPageList().get(i);
+                checkRestaurantResponse(response, "$.data.pageList[" + i + "]", restaurant);
+            }
         }
 
         static Object[][] getRestaurantsInvalidProvider() {
