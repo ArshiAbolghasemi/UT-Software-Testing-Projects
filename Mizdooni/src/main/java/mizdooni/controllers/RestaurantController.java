@@ -40,7 +40,7 @@ class RestaurantController {
         }
     }
 
-    @GetMapping("/restaurants/manager/{managerId}")
+    @GetMapping("/manager/{managerId}/restaurants")
     public Response getManagerRestaurants(@PathVariable int managerId) {
         try {
             List<Restaurant> restaurants = restaurantService.getManagerRestaurants(managerId);
