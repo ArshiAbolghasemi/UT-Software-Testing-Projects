@@ -248,7 +248,7 @@ public class RestaurantControllerAPITest {
     }
 
     @Nested
-    public class GetManagerRestaurants {
+    class GetManagerRestaurants {
 
         static Object[][] getManagerRestaurantsValidManagerIdProvider() {
             return new Object[][] {
