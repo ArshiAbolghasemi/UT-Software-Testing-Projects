@@ -349,12 +349,13 @@ public class RestaurantControllerAPITest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success", CoreMatchers.is(true)))
                 .andExpect(jsonPath("$.message", CoreMatchers.is("restaurant types")))
+                .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data", containsInAnyOrder(types.toArray())))
                 .andDo(print());
         }
 
         @Test
-        public void testGetRestaurantTypes_ExceptionHandling() throws Exception {
+        public void shouldReturnBadRequest_whenExceptionIsThrown() throws Exception {
             when(restaurantService.getRestaurantTypes()).thenThrow(new RuntimeException("Some error"));
 
             mockMvc.perform(get("/restaurants/types")
@@ -363,6 +364,41 @@ public class RestaurantControllerAPITest {
                .andExpect(jsonPath("$.success", CoreMatchers.is(false)))
                .andExpect(jsonPath("$.message", CoreMatchers.is("Some error")))
                .andDo(print());
+        }
+    }
+
+    @Nested
+    class GetRestaurantLocations {
+
+        @Test
+        void shouldReturnRestauratnlocations() throws Exception {
+            Map<String, Set<String>> locations = Map.of(
+                "tehroon", Set.of("feri kasif","khanlari"),
+                "bikini_bottom", Set.of("The Krusty Krab")
+            );
+
+            when(restaurantService.getRestaurantLocations()).thenReturn(locations);
+
+            mockMvc.perform(get("/restaurants/locations")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success", CoreMatchers.is(true)))
+                .andExpect(jsonPath("$.message", CoreMatchers.is("restaurant locations")))
+                .andExpect(jsonPath("$.data").isMap())
+                .andExpect(jsonPath("$.data.tehroon", containsInAnyOrder(locations.get("tehroon").toArray())))
+                .andExpect(jsonPath("$.data.bikini_bottom", containsInAnyOrder(locations.get("bikini_bottom").toArray())))
+                .andDo(print());
+        }
+
+        @Test
+        void shouldReturnBadRequest_whenExceptionIsThrown() throws Exception {
+            when(restaurantService.getRestaurantLocations()).thenThrow(RuntimeException.class);
+
+            mockMvc.perform(get("/restaurants/locations")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success", CoreMatchers.is(false)))
+                .andDo(print());
         }
     }
 }
