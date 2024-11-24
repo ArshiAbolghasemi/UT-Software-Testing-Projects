@@ -363,7 +363,7 @@ public class RestaurantControllerAPITest {
                .andExpect(jsonPath("$.success", CoreMatchers.is(false)))
                .andExpect(jsonPath("$.message", CoreMatchers.is("Some error")))
                .andDo(print());
-    }
+        }
     }
 }
 
