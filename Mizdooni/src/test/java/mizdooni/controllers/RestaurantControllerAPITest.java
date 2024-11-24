@@ -301,5 +301,37 @@ public class RestaurantControllerAPITest {
                 .andDo(print());
         }
     }
+
+    @Nested
+    class ValidateRestaurantName {
+
+        @Test
+        void shouldReturnConflictResponse_whenResturantWithChosenNameIsExisted() throws Exception {
+            String name = "bikini bottom";
+            when(restaurantService.restaurantExists(eq(name))).thenReturn(true);
+
+            mockMvc.perform(get("/validate/restaurant-name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .param("data", name))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message", CoreMatchers.is("restaurant name is taken")))
+                .andExpect(jsonPath("$.success", CoreMatchers.is(false)))
+                .andDo(print());
+        }
+
+        @Test
+        void shouldReturnOkResponse_whenRestaurantWithChosenNameIsNotExisted() throws Exception {
+            String name = "feri kasif";
+            when(restaurantService.restaurantExists(eq(name))).thenReturn(false);
+
+            mockMvc.perform(get("/validate/restaurant-name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .param("data", name))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message", CoreMatchers.is("restaurant name is available")))
+                .andExpect(jsonPath("$.success", CoreMatchers.is(true)))
+                .andDo(print());
+        }
+    }
 }
 
