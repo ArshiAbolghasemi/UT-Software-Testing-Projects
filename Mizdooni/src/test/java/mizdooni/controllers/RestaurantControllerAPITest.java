@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.any;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -34,9 +35,12 @@ import org.springframework.util.LinkedMultiValueMap;
 
 import mizdooni.model.Restaurant;
 import mizdooni.model.RestaurantSearchFilter;
+import mizdooni.model.User;
 import mizdooni.response.PagedList;
 import mizdooni.service.RestaurantService;
+import mizdooni.service.UserService;
 import mizdooni.utils.RestaurantFaker;
+import mizdooni.utils.UserFaker;
 
 @SpringBootTest
 @AutoConfigureMockMvc(addFilters = false)
@@ -46,6 +50,8 @@ public class RestaurantControllerAPITest {
     private MockMvc mockMvc;
     @MockBean
     private RestaurantService restaurantService;
+    @MockBean
+    private UserService userService;
 
     private void checkRestaurantResponse(ResultActions response, String jsonBasePath, Restaurant restaurant) 
         throws Exception {
@@ -235,6 +241,61 @@ public class RestaurantControllerAPITest {
         void shouldReturnBadRequest_whenParametersIsMissedOrInvalid(Map<String, String> params) throws Exception {
             mockMvc.perform(get("/restaurants")
                 .params(new LinkedMultiValueMap<>() {{ params.forEach((key, value) -> add(key, value)); }})
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andDo(print());
+        }
+    }
+
+    @Nested
+    public class GetManagerRestaurants {
+
+        static Object[][] getManagerRestaurantsValidManagerIdProvider() {
+            return new Object[][] {
+                {
+                    UserFaker.createManager(),
+                    List.of(RestaurantFaker.createRestaurant(), RestaurantFaker.createRestaurant())
+                },
+                {
+                    UserFaker.createManager(),
+                    Collections.emptyList()
+                }
+            };
+        }
+        @ParameterizedTest
+        @MethodSource("getManagerRestaurantsValidManagerIdProvider")
+        void shouldReturnMangerRestaurants_whenRestaurantMangerIdIsValid(User manager, List<Restaurant> restaurants) 
+            throws Exception {
+            int managerId = manager.getId();
+            when(userService.getManager(eq(managerId))).thenReturn(manager);
+            when(restaurantService.getManagerRestaurants(eq(managerId))).thenReturn(restaurants);
+
+            ResultActions response = mockMvc.perform(get("/manager/{managerId}/restaurants", Integer.toString(managerId))
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message", CoreMatchers.is("manager restaurants listed")))
+                .andExpect(jsonPath("$.success", CoreMatchers.is(true)))
+                .andExpect(jsonPath("$.data").isArray())
+                .andDo(print());
+            for (int i = 0; i < restaurants.size(); i++) {
+                Restaurant restaurant = restaurants.get(i);
+                checkRestaurantResponse(response, "$.data[" + i + "]", restaurant);
+            }
+        }
+
+        @Test
+        void shouldReturnBadRequest_whenManagerIdIsInvalid() throws Exception {
+            int managerId = 111111;
+            when(userService.getManager(eq(managerId))).thenReturn(null);
+            mockMvc.perform(get("/manager/{managerId}/restaurants", Integer.toString(managerId))
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andDo(print());
+        }
+
+        @Test
+        void shouldReturnBadRequest_whenManagerIdIsInvalidFormat() throws Exception {
+            mockMvc.perform(get("/manager/{managerId}/restaurants", "invalid manager id format")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andDo(print());
