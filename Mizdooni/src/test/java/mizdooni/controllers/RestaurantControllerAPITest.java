@@ -7,10 +7,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.any;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.hamcrest.CoreMatchers;
 
@@ -332,6 +334,36 @@ public class RestaurantControllerAPITest {
                 .andExpect(jsonPath("$.success", CoreMatchers.is(true)))
                 .andDo(print());
         }
+    }
+
+    @Nested
+    class GetRestaurantTypes {
+
+        @Test
+        void shouldReturnRestaurantTypes() throws Exception {
+            Set<String> types = Set.of("Italian", "Chinese", "Indian", "Mexican");
+            when(restaurantService.getRestaurantTypes()).thenReturn(types);
+
+            mockMvc.perform(get("/restaurants/types")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success", CoreMatchers.is(true)))
+                .andExpect(jsonPath("$.message", CoreMatchers.is("restaurant types")))
+                .andExpect(jsonPath("$.data", containsInAnyOrder(types.toArray())))
+                .andDo(print());
+        }
+
+        @Test
+        public void testGetRestaurantTypes_ExceptionHandling() throws Exception {
+            when(restaurantService.getRestaurantTypes()).thenThrow(new RuntimeException("Some error"));
+
+            mockMvc.perform(get("/restaurants/types")
+                .contentType(MediaType.APPLICATION_JSON))
+               .andExpect(status().isBadRequest())
+               .andExpect(jsonPath("$.success", CoreMatchers.is(false)))
+               .andExpect(jsonPath("$.message", CoreMatchers.is("Some error")))
+               .andDo(print());
+    }
     }
 }
 
