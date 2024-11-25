@@ -3,6 +3,7 @@ package mizdooni.controllers;
 import static mizdooni.controllers.ControllerUtils.TIME_FORMATTER;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.mockito.Mockito.eq;
@@ -36,6 +37,12 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.util.LinkedMultiValueMap;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javafaker.Faker;
+
+import mizdooni.exceptions.DuplicatedRestaurantName;
+import mizdooni.exceptions.InvalidWorkingTime;
+import mizdooni.exceptions.UserNotManager;
 import mizdooni.model.Address;
 import mizdooni.model.Restaurant;
 import mizdooni.model.RestaurantSearchFilter;
@@ -56,6 +63,8 @@ public class RestaurantControllerAPITest {
     private RestaurantService restaurantService;
     @MockBean
     private UserService userService;
+    @Autowired
+    private ObjectMapper objectMapper;
 
     private void checkRestaurantResponse(ResultActions response, String jsonBasePath, Restaurant restaurant) 
         throws Exception {
@@ -309,6 +318,41 @@ public class RestaurantControllerAPITest {
     @Nested
     class AddRestaurant {
 
+        static Object[][] addRestaurantValidParamsProvider() {
+            return new Object[][] {
+                {
+                    Map.of(
+                        "name", "bikini bottom",
+                        "type", "seafoad",
+                        "description", Faker.instance().lorem().sentence(),
+                        "startTime", "08:30",
+                        "endTime", "23:00",
+                        "address", Map.of(
+                            "city", Faker.instance().address().city(),
+                            "country", Faker.instance().address().country(),
+                            "street", "23th"
+                        )
+                    )
+                },
+                {
+                    Map.of(
+                        "name", "feri kasif",
+                        "type", "irooni",
+                        "description", Faker.instance().lorem().sentence(),
+                        "startTime", "08:30",
+                        "endTime", "23:00",
+                        "address", Map.of(
+                            "city", Faker.instance().address().city(),
+                            "country", Faker.instance().address().country(),
+                            "street", "23th"
+                        ),
+                        "image", Faker.instance().file().fileName()
+                    )
+                }
+            };
+        }
+        @ParameterizedTest
+        @MethodSource("addRestaurantValidParamsProvider")
         void shouldAddRestaurantCorrectly_whenParametersAreValid(Map<String, Object> params) throws Exception {
             int restaurantId = 1;
             String name = (String) params.get("name");
@@ -317,10 +361,114 @@ public class RestaurantControllerAPITest {
             String image = params.get("image") == null ? ControllerUtils.PLACEHOLDER_IMAGE : (String) params.get("image");
             LocalTime startTime = LocalTime.parse((String) params.get("startTime"), ControllerUtils.TIME_FORMATTER);
             LocalTime endTime = LocalTime.parse((String) params.get("endTime"), ControllerUtils.TIME_FORMATTER);
-            Map<String, String> addr = (Map<String, String>) params.get("street");
-            Address address = new Address(addr.get("country"), addr.get("city"), addr.get("street"));
-            when(restaurantService.addRestaurant(eq(name), eq(type), eq(startTime), eq(endTime), eq(description), 
-                eq(address), eq(image))).thenReturn(restaurantId);
+            Map<String, String> addr = (Map<String, String>) params.get("address");
+
+            when(restaurantService.addRestaurant(eq(name), eq(type), eq(startTime), eq(endTime), eq(description),
+                any(Address.class), eq(image))).thenReturn(restaurantId);
+
+            String content = objectMapper.writeValueAsString(params);
+
+            mockMvc.perform(post("/restaurants")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(content))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message", CoreMatchers.is("restaurant added")))
+                .andExpect(jsonPath("$.success", CoreMatchers.is(true)))
+                .andExpect(jsonPath("$.data").isNumber())
+                .andExpect(jsonPath("$.data", CoreMatchers.is(restaurantId)))
+                .andDo(print());
+        }
+
+        static Object[][] addRestaurantMissedParametersProvider() {
+            return new Object[][] {
+                {
+                    Map.of(
+                        "type", "seafoad",
+                        "startTime", "08:30",
+                        "endTime", "23:00",
+                        "address", Map.of(
+                            "city", Faker.instance().address().city(),
+                            "country", Faker.instance().address().country(),
+                            "street", "23th"
+                        )
+                    )
+                },
+                {
+                    Map.of(
+                        "name", "bikini bottom",
+                        "description", Faker.instance().lorem().sentence(),
+                        "endTime", "23:00",
+                        "address", Map.of(
+                            "city", Faker.instance().address().city(),
+                            "country", Faker.instance().address().country(),
+                            "street", "23th"
+                        )
+                    )
+                },
+                {
+                    Map.of(
+                        "name", "bikini bottom",
+                        "type", "seafoad",
+                        "description", Faker.instance().lorem().sentence(),
+                        "startTime", "08:30",
+                        "endTime", "23:00"
+                    )
+                },
+                {
+                    Map.of(
+                        "name", "bikini bottom",
+                        "type", "seafoad",
+                        "description", Faker.instance().lorem().sentence(),
+                        "startTime", "08:30",
+                        "endTime", "23:00",
+                        "address", Map.of(
+                            "city", Faker.instance().address().city()
+                        )
+                    )
+                }
+            };
+        }
+        @ParameterizedTest
+        @MethodSource("addRestaurantMissedParametersProvider")
+        void shouldReturnBadRequest_whenParametersIsMissed(Map<String, Object> params) throws Exception {
+            mockMvc.perform(post("/restaurants")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(params)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success", CoreMatchers.is(false)))
+                .andDo(print());
+        }
+
+        static Object[][] addRestauratInvalidParameters() {
+            return new Object[][] {
+                { DuplicatedRestaurantName.class },
+                { UserNotManager.class },
+                { InvalidWorkingTime.class },
+            };
+        }
+        @ParameterizedTest
+        @MethodSource("addRestauratInvalidParameters")
+        void shouldReturnBadRequest_whenParametersAreInvalid(Class<? extends Throwable> exception) throws Exception {
+            when(restaurantService.addRestaurant(any(String.class), any(String.class), any(LocalTime.class),
+                any(LocalTime.class), any(String.class), any(Address.class), any(String.class))).thenThrow(exception);
+            Map<String, Object> params = Map.of(
+                "name", "bikini bottom",
+                "type", "seafoad",
+                "description", Faker.instance().lorem().sentence(),
+                "startTime", "08:30",
+                "endTime", "23:00",
+                "address", Map.of(
+                "city", Faker.instance().address().city(),
+                    "country", Faker.instance().address().country(),
+                    "street", "23th"
+                )
+            );
+            mockMvc.perform(post("/restaurants")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(params)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success", CoreMatchers.is(false)))
+                .andDo(print());
         }
     }
 
