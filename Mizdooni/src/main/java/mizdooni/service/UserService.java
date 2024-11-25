@@ -3,6 +3,7 @@ package mizdooni.service;
 import mizdooni.database.Database;
 import mizdooni.exceptions.DuplicatedUsernameEmail;
 import mizdooni.exceptions.InvalidEmailFormat;
+import mizdooni.exceptions.InvalidManagerId;
 import mizdooni.exceptions.InvalidUsernameFormat;
 import mizdooni.model.Address;
 import mizdooni.model.User;
@@ -58,5 +59,18 @@ public class UserService {
 
     public boolean emailExists(String email) {
         return db.users.stream().anyMatch(u -> u.getEmail().equals(email));
+    }
+
+    public User getManager(int managerId) throws InvalidManagerId {
+        User user = db.users.stream()
+            .filter(u -> u.getRole().equals(User.Role.manager) && u.getId() == managerId)
+            .findFirst()
+            .orElse(null);
+
+        if (user == null) {
+            throw new InvalidManagerId();
+        }
+
+        return user;
     }
 }
