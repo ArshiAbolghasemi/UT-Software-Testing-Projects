@@ -9,6 +9,7 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.any;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 
+import java.time.LocalTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +36,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.util.LinkedMultiValueMap;
 
+import mizdooni.model.Address;
 import mizdooni.model.Restaurant;
 import mizdooni.model.RestaurantSearchFilter;
 import mizdooni.model.User;
@@ -301,6 +303,24 @@ public class RestaurantControllerAPITest {
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andDo(print());
+        }
+    }
+
+    @Nested
+    class AddRestaurant {
+
+        void shouldAddRestaurantCorrectly_whenParametersAreValid(Map<String, Object> params) throws Exception {
+            int restaurantId = 1;
+            String name = (String) params.get("name");
+            String type = (String) params.get("type");
+            String description = (String) params.get("description");
+            String image = params.get("image") == null ? ControllerUtils.PLACEHOLDER_IMAGE : (String) params.get("image");
+            LocalTime startTime = LocalTime.parse((String) params.get("startTime"), ControllerUtils.TIME_FORMATTER);
+            LocalTime endTime = LocalTime.parse((String) params.get("endTime"), ControllerUtils.TIME_FORMATTER);
+            Map<String, String> addr = (Map<String, String>) params.get("street");
+            Address address = new Address(addr.get("country"), addr.get("city"), addr.get("street"));
+            when(restaurantService.addRestaurant(eq(name), eq(type), eq(startTime), eq(endTime), eq(description), 
+                eq(address), eq(image))).thenReturn(restaurantId);
         }
     }
 
