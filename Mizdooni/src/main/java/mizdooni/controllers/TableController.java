@@ -22,7 +22,7 @@ class TableController {
     @Autowired
     private TableService tableService;
 
-    @GetMapping("/tables/{restaurantId}")
+    @GetMapping("/restaurants/{restaurantId}/tables")
     public Response getTables(@PathVariable int restaurantId) {
         ControllerUtils.checkRestaurant(restaurantId, restaurantService);
         try {
@@ -33,7 +33,7 @@ class TableController {
         }
     }
 
-    @PostMapping("/tables/{restaurantId}")
+    @PostMapping("/restaurants/{restaurantId}/tables")
     public Response addTable(@PathVariable int restaurantId, @RequestBody Map<String, String> params) {
         ControllerUtils.checkRestaurant(restaurantId, restaurantService);
         if (!ControllerUtils.containsKeys(params, "seatsNumber")) {
