@@ -1,5 +1,6 @@
 package mizdooni.controllers;
 
+import mizdooni.exceptions.InvalidSeatsNumber;
 import mizdooni.model.Table;
 import mizdooni.response.Response;
 import mizdooni.response.ResponseException;
@@ -43,6 +44,9 @@ class TableController {
         int seatsNumber;
         try {
             seatsNumber = Integer.parseInt(params.get("seatsNumber"));
+            if (seatsNumber == 0) {
+                throw new InvalidSeatsNumber();
+            }
         } catch (Exception ex) {
             throw new ResponseException(HttpStatus.BAD_REQUEST, PARAMS_BAD_TYPE);
         }
