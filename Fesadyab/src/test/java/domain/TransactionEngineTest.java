@@ -44,14 +44,14 @@ public class TransactionEngineTest {
         ArrayList<Transaction> transactionHistory = new ArrayList<>(List.of(
             TransactionFaker.createTransaction(10_000),
             TransactionFaker.createTransaction(12_500),
-            TransactionFaker.createTransaction(25_000),
-            TransactionFaker.createTransaction(40_000)
+            TransactionFaker.createTransaction(15_000),
+            TransactionFaker.createTransaction(45_000)
         ));
 
         return new Object[][] {
             { new ArrayList<>(), 4_000, 0 },
             { transactionHistory, 50_000, 0 },
-            { transactionHistory, 15_000, 15_000 },
+            { transactionHistory, 15_000, 35_000 },
             { transactionHistory, 10_000, 0 },
         };
     }
