@@ -75,7 +75,7 @@ public class TransactionEngineTest {
 
         return new Object[][] {
             { transactionHistory, TransactionFaker.createTransaction(1, 12_000, false), 0 },
-            { transactionHistory, TransactionFaker.createTransaction(1, 7_500, true), 0 },
+            { transactionHistory, TransactionFaker.createTransaction(1, 5_000, true), 0 },
             { transactionHistory, TransactionFaker.createTransaction(1, 35_000, true), 15_000 },
         };
     }
@@ -89,16 +89,16 @@ public class TransactionEngineTest {
     }
 
     static Object[][] addTransactionProvider() {
-        Transaction existedTransaction = TransactionFaker.createTransaction(1, 10_000);
+        Transaction existedTransaction = TransactionFaker.createTransaction(1, 10_000, true);
         ArrayList<Transaction> transactionHistory = new ArrayList<>(List.of(
             existedTransaction,
-            TransactionFaker.createTransaction(1, 5_000),
-            TransactionFaker.createTransaction(1, 9_000)
+            TransactionFaker.createTransaction(1, 1_500),
+            TransactionFaker.createTransaction(1, 500)
         ));
 
         return new Object[][] {
             { transactionHistory, existedTransaction, 0 },
-            { transactionHistory, TransactionFaker.createTransaction(1, 20_000, true), 4_000 },
+            { transactionHistory, TransactionFaker.createTransaction(1, 20_000, true), 12_000 },
             { transactionHistory, TransactionFaker.createTransaction(1, 7_000, true), 0 }
         };
     }
