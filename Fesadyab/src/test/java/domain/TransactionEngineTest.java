@@ -99,7 +99,15 @@ public class TransactionEngineTest {
         return new Object[][] {
             { transactionHistory, existedTransaction, 0 },
             { transactionHistory, TransactionFaker.createTransaction(1, 20_000, true), 12_000 },
-            { transactionHistory, TransactionFaker.createTransaction(1, 7_000, true), 0 }
+            { transactionHistory, TransactionFaker.createTransaction(1, 7_000, true), 0 },
+            {
+                new ArrayList<>(List.of(
+                    TransactionFaker.createTransaction(1, 1_000),
+                    TransactionFaker.createTransaction(1, 2_000)
+                )),
+                TransactionFaker.createTransaction(1, 3_000, false),
+                1_000
+            }
         };
     }
     @ParameterizedTest
