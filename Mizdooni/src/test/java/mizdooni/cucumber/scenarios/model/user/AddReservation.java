@@ -1,4 +1,4 @@
-package mizdooni.scenraios.model.user;
+package mizdooni.cucumber.scenarios.model.user;
 
 import static org.junit.Assert.assertEquals;
 
