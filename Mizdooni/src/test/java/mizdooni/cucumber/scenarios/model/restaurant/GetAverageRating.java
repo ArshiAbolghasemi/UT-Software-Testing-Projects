@@ -20,8 +20,8 @@ public class GetAverageRating {
     private Restaurant restaurant;
     private Rating actualAverageRating;
 
-    @Given("a restaurant")
-    public void a_restaurant() {
+    @Given("a sample restaurant")
+    public void a_sample_restaurant() {
         restaurant = RestaurantFaker.createRestaurant();
     }
 
